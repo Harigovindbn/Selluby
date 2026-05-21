@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Lock, Truck, Globe } from 'lucide-react'
 import Link from 'next/link'
+import { useCart } from '../../components/CartProvider'
 
 const CURRENCIES = {
   USD: { symbol: '$', rate: 1 },
@@ -67,14 +68,11 @@ export default function Checkout() {
   })
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderStep, setOrderStep] = useState<'shipping' | 'payment' | 'confirmation'>('shipping')
+  const [errors, setErrors] = useState<string[]>([])
+  const [completedTotal, setCompletedTotal] = useState<number | null>(null)
+  const { items, totalPrice, clearCart, updateQuantity, removeItem } = useCart()
 
-  // Sample cart items
-  const cartItems = [
-    { id: 1, name: 'Premium Wireless Headphones', price: 299.99, quantity: 1 },
-    { id: 2, name: 'Phone Case', price: 29.99, quantity: 2 },
-  ]
-
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const subtotal = totalPrice
   const tax = subtotal * country.tax
   const shipping = subtotal > 100 ? 0 : 10
   const total = subtotal + tax + shipping
@@ -92,16 +90,64 @@ export default function Checkout() {
     }))
   }
 
+  const validateShipping = () => {
+    const newErrors: string[] = []
+
+    if (!formData.firstName.trim()) newErrors.push('First name is required.')
+    if (!formData.lastName.trim()) newErrors.push('Last name is required.')
+    if (!formData.email.trim()) {
+      newErrors.push('Email is required.')
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.push('Enter a valid email address.')
+    }
+    if (!formData.phone.trim() || !/^\+?[0-9\s()-]{7,20}$/.test(formData.phone)) {
+      newErrors.push('Enter a valid phone number.')
+    }
+    if (!formData.address.trim()) newErrors.push('Street address is required.')
+    if (!formData.city.trim()) newErrors.push('City is required.')
+    if (!formData.zipCode.trim()) newErrors.push('ZIP code is required.')
+
+    setErrors(newErrors)
+    return newErrors.length === 0
+  }
+
+  const validatePayment = () => {
+    const newErrors: string[] = []
+    const cardNumber = formData.cardNumber.replace(/\s+/g, '')
+    const expiryIsValid = /^\d{2}\/\d{2}$/.test(formData.cardExpiry)
+
+    if (!cardNumber || !/^\d{13,19}$/.test(cardNumber)) {
+      newErrors.push('Enter a valid card number (13-19 digits).')
+    }
+    if (!expiryIsValid) {
+      newErrors.push('Enter a valid expiry date in MM/YY format.')
+    }
+    if (!formData.cardCvc || !/^\d{3,4}$/.test(formData.cardCvc)) {
+      newErrors.push('Enter a valid CVC.')
+    }
+
+    setErrors(newErrors)
+    return newErrors.length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (orderStep === 'shipping') {
+      if (!validateShipping()) return
       setOrderStep('payment')
-    } else if (orderStep === 'payment') {
+      setErrors([])
+      return
+    }
+
+    if (orderStep === 'payment') {
+      if (!validatePayment()) return
       setIsProcessing(true)
-      // Simulate payment processing
       setTimeout(() => {
         setIsProcessing(false)
+        setCompletedTotal(total)
         setOrderStep('confirmation')
+        clearCart()
       }, 2000)
     }
   }
@@ -112,6 +158,22 @@ export default function Checkout() {
       opacity: 1,
       transition: { staggerChildren: 0.1 },
     },
+  }
+
+  if (items.length === 0 && orderStep !== 'confirmation') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-24 pb-16 flex items-center justify-center px-6">
+        <div className="max-w-2xl w-full text-center rounded-3xl border border-white/10 bg-white/5 p-12">
+          <h1 className="text-4xl font-bold text-white mb-4">Your cart is empty</h1>
+          <p className="text-gray-300 mb-8">
+            Add items to your cart before checking out. Browse our store for premium products and fast shipping.
+          </p>
+          <Link href="/" className="inline-block bg-blue-500 hover:bg-blue-400 text-white px-8 py-3 rounded-lg font-semibold transition">
+            Back to shopping
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -145,7 +207,7 @@ export default function Checkout() {
                 <div>
                   <p className="text-gray-400 text-sm">Total Amount</p>
                   <p className="text-2xl font-bold text-white mt-2">
-                    {CURRENCIES[currency].symbol}{convertPrice(total)}
+                    {CURRENCIES[currency].symbol}{convertPrice(completedTotal ?? total)}
                   </p>
                 </div>
                 <div>
@@ -207,6 +269,17 @@ export default function Checkout() {
                     </motion.div>
                   ))}
                 </div>
+
+                {errors.length > 0 && (
+                  <div className="space-y-2 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-red-100 mb-6">
+                    <p className="font-semibold">Please fix the following:</p>
+                    <ul className="list-disc list-inside text-sm text-red-100">
+                      {errors.map((error) => (
+                        <li key={error}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Shipping Information */}
                 {orderStep === 'shipping' && (
@@ -491,17 +564,47 @@ export default function Checkout() {
 
                 {/* Cart Items */}
                 <div className="space-y-4 mb-6 pb-6 border-b border-white/10">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex justify-between text-gray-300">
-                      <div>
-                        <p className="font-semibold">{item.name}</p>
-                        <p className="text-sm text-gray-400">Qty: {item.quantity}</p>
+                  {items.length === 0 ? (
+                    <p className="text-gray-400">No items in cart.</p>
+                  ) : (
+                    items.map((item) => (
+                      <div key={item.product.id} className="grid grid-cols-12 gap-4 items-center text-gray-300">
+                        <div className="col-span-6">
+                          <p className="font-semibold">{item.product.name}</p>
+                          <p className="text-sm text-gray-400">{item.product.category}</p>
+                        </div>
+                        <div className="col-span-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            className="w-8 h-8 rounded-lg bg-white/10 text-white hover:bg-white/20 transition"
+                          >
+                            −
+                          </button>
+                          <span className="text-sm">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            className="w-8 h-8 rounded-lg bg-white/10 text-white hover:bg-white/20 transition"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="col-span-3 text-right space-y-1">
+                          <p className="font-semibold">
+                            {CURRENCIES[currency].symbol}{convertPrice(item.product.price * item.quantity)}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.product.id)}
+                            className="text-xs text-red-300 hover:text-red-400"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
-                      <p className="font-semibold">
-                        {CURRENCIES[currency].symbol}{convertPrice(item.price * item.quantity)}
-                      </p>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
 
                 {/* Price Breakdown */}

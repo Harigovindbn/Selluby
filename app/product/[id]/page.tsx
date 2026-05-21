@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ShoppingCart, Heart, Share2, Truck, RotateCcw, Shield } from 'lucide-react'
 import Link from 'next/link'
+import { getProductById, products } from '../../../lib/products'
+import { useCart } from '../../../components/CartProvider'
 
 export default function ProductDetail({ params }: { params: { id: string } }) {
   const [quantity, setQuantity] = useState(1)
@@ -11,64 +13,24 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const [selectedSize, setSelectedSize] = useState('M')
   const [isFavorite, setIsFavorite] = useState(false)
   const [activeTab, setActiveTab] = useState<'details' | 'reviews' | 'shipping'>('details')
+  const { addItem } = useCart()
 
-  // Sample product data - replace with API call
-  const product = {
-    id: params.id,
-    name: 'Premium Wireless Headphones',
-    price: 299.99,
-    originalPrice: 399.99,
-    rating: 4.8,
-    reviews: 342,
-    image: 'https://via.placeholder.com/600x600?text=Headphones',
-    images: [
-      'https://via.placeholder.com/600x600?text=Headphones+1',
-      'https://via.placeholder.com/600x600?text=Headphones+2',
-      'https://via.placeholder.com/600x600?text=Headphones+3',
-      'https://via.placeholder.com/600x600?text=Headphones+4',
-    ],
-    category: 'Electronics',
-    inStock: true,
-    description: 'Experience premium sound quality with our wireless headphones. Features active noise cancellation, 30-hour battery life, and premium comfort for all-day wear.',
-    features: [
-      'Active Noise Cancellation (ANC)',
-      '30-Hour Battery Life',
-      'Premium Sound Quality (Hi-Res Audio)',
-      'Comfortable Over-Ear Design',
-      'Foldable Design with Carry Case',
-      'Bluetooth 5.3 Connectivity',
-      'Built-in Microphone for Calls',
-      'Touch Controls',
-    ],
-    colors: ['black', 'silver', 'gold', 'rose-gold'],
-    sizes: ['S', 'M', 'L', 'XL'],
-    reviewList: [
-      {
-        id: 1,
-        author: 'John Doe',
-        rating: 5,
-        date: '2024-01-15',
-        title: 'Amazing sound quality!',
-        comment: 'Best headphones I have ever used. Highly recommend!',
-        helpful: 42,
-      },
-      {
-        id: 2,
-        author: 'Jane Smith',
-        rating: 4,
-        date: '2024-01-10',
-        title: 'Great value for money',
-        comment: 'Good quality, comfortable, but a bit pricey.',
-        helpful: 28,
-      },
-    ],
+  const product = getProductById(params.id)
+  if (!product) {
+    return (
+      <div className="min-h-screen pt-24 pb-16 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-center text-white px-6">
+        <div className="max-w-3xl mx-auto py-40 rounded-3xl border border-white/10 bg-white/5">
+          <h1 className="text-4xl font-bold mb-4">Product not found</h1>
+          <p className="text-gray-300 mb-8">We couldn't find that product. Please return to the shop and choose another item.</p>
+          <Link href="/" className="inline-block bg-blue-500 hover:bg-blue-400 transition text-white px-6 py-3 rounded-lg">
+            Back to shop
+          </Link>
+        </div>
+      </div>
+    )
   }
 
-  const relatedProducts = [
-    { id: 2, name: 'Designer Smartwatch', price: 449.99, image: 'https://via.placeholder.com/300x300?text=Smartwatch' },
-    { id: 4, name: 'Portable Speaker', price: 129.99, image: 'https://via.placeholder.com/300x300?text=Speaker' },
-    { id: 5, name: 'Laptop Stand', price: 89.99, image: 'https://via.placeholder.com/300x300?text=Stand' },
-  ]
+  const relatedProducts = products.filter((item) => item.id !== product.id).slice(0, 3)
 
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
 
@@ -256,6 +218,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={() => addItem(product, quantity)}
                 className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-4 rounded-lg font-bold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition flex items-center justify-center gap-2"
               >
                 <ShoppingCart size={24} />
@@ -339,27 +302,17 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
 
           {activeTab === 'reviews' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="space-y-6">
-                {product.reviewList.map((review) => (
-                  <div key={review.id} className="p-6 rounded-lg bg-white/5 border border-white/10">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <p className="font-bold text-white">{review.author}</p>
-                        <p className="text-sm text-gray-400">{review.date}</p>
-                      </div>
-                      <div className="flex text-yellow-400">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i}>{i < review.rating ? '★' : '☆'}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <h4 className="font-semibold text-white mb-2">{review.title}</h4>
-                    <p className="text-gray-300 mb-4">{review.comment}</p>
-                    <button className="text-sm text-gray-400 hover:text-gray-300">
-                      Helpful ({review.helpful})
-                    </button>
+              <div className="space-y-6 text-gray-300">
+                <div className="p-6 rounded-lg bg-white/5 border border-white/10">
+                  <p className="text-lg font-semibold text-white mb-3">Customer Reviews</p>
+                  <p>{product.rating} stars based on {product.reviews} verified buyers.</p>
+                  <div className="mt-4 flex items-center gap-2 text-yellow-400 text-xl">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i}>{i < Math.round(product.rating) ? '★' : '☆'}</span>
+                    ))}
                   </div>
-                ))}
+                  <p className="mt-4 text-gray-400">Browse our product details and experience the quality that customers love.</p>
+                </div>
               </div>
             </motion.div>
           )}

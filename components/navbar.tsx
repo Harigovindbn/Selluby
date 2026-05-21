@@ -1,22 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ShoppingCart, Menu, X, Search } from 'lucide-react'
+import { useCart } from './CartProvider'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const [cartCount, setCartCount] = useState(2)
-
-  // Listen for add to cart events
-  useEffect(() => {
-    const handleAddToCart = () => {
-      setCartCount(prev => prev + 1)
-    }
-    window.addEventListener('addToCart', handleAddToCart)
-    return () => window.removeEventListener('addToCart', handleAddToCart)
-  }, [])
+  const { totalItems } = useCart()
 
   const navItems = [
     { label: 'Home', href: '/' },
@@ -78,13 +70,13 @@ export default function Navbar() {
                 className="relative p-2 text-gray-300 hover:text-blue-400 transition"
               >
                 <ShoppingCart size={24} />
-                {cartCount > 0 && (
+                {totalItems > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"
                   >
-                    {cartCount}
+                    {totalItems}
                   </motion.span>
                 )}
               </motion.button>

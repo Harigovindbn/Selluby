@@ -2,107 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-
-// Inline BubbleProduct component to avoid missing import error
-function BubbleProduct({
-  product,
-  isSelected,
-  onSelect,
-}: {
-  product: any
-  isSelected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <div className="flex flex-col items-center">
-      <button
-        onClick={onSelect}
-        className={`rounded-full overflow-hidden shadow-lg transition-transform transform ${isSelected ? 'scale-105' : 'hover:scale-105'}`}
-        style={{ width: 200, height: 200 }}
-        aria-pressed={isSelected}
-      >
-        <Image src={product.image} alt={product.name} width={200} height={200} className="w-full h-full object-cover" />
-      </button>
-      <div className="mt-3 text-center">
-        <div className="font-semibold">{product.name}</div>
-        <div className="text-sm text-gray-300">${product.price}</div>
-      </div>
-    </div>
-  )
-}
+import BubbleProduct from '../components/BubbleProduct'
 import { motion } from 'framer-motion'
+import { products as productCatalog, Product } from '../lib/products'
 
 export default function Home() {
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [selectedBubble, setSelectedBubble] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Sample products - replace with API call
   useEffect(() => {
-    const sampleProducts = [
-      {
-        id: '1',
-        name: 'Premium Wireless Headphones',
-        price: 299.99,
-        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
-        category: 'Electronics',
-        rating: 4.8,
-        reviews: 342,
-        description: 'Crystal clear sound with active noise cancellation'
-      },
-      {
-        id: '2',
-        name: 'Designer Smartwatch',
-        price: 449.99,
-        image: 'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=800&q=80',
-        category: 'Wearables',
-        rating: 4.9,
-        reviews: 521,
-        description: 'Stay connected with advanced health features'
-      },
-      {
-        id: '3',
-        name: 'Professional Camera',
-        price: 1299.99,
-        image: 'https://images.unsplash.com/photo-1519183071298-a2962eadc0a7?auto=format&fit=crop&w=800&q=80',
-        category: 'Photography',
-        rating: 4.7,
-        reviews: 289,
-        description: '4K video with professional-grade lens'
-      },
-      {
-        id: '4',
-        name: 'Portable Speaker',
-        price: 129.99,
-        image: 'https://images.unsplash.com/photo-1512418490979-92798cec0f9d?auto=format&fit=crop&w=800&q=80',
-        category: 'Audio',
-        rating: 4.6,
-        reviews: 412,
-        description: 'High-quality stereo sound on the go'
-      },
-      {
-        id: '5',
-        name: 'Laptop Stand',
-        price: 89.99,
-        image: 'https://images.unsplash.com/photo-1555617117-08ef641a1abd?auto=format&fit=crop&w=800&q=80',
-        category: 'Accessories',
-        rating: 4.5,
-        reviews: 156,
-        description: 'Ergonomic design for comfort and productivity'
-      },
-      {
-        id: '6',
-        name: 'Mechanical Keyboard',
-        price: 199.99,
-        image: 'https://images.unsplash.com/photo-1510565097016-186a2cc40f2d?auto=format&fit=crop&w=800&q=80',
-        category: 'Peripherals',
-        rating: 4.8,
-        reviews: 678,
-        description: 'RGB lighting with premium mechanical switches'
-      },
-    ]
-    
-    setProducts(sampleProducts)
+    setProducts(productCatalog)
     setLoading(false)
   }, [])
 

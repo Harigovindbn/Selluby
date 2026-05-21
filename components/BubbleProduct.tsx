@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Heart, ShoppingCart, Eye } from 'lucide-react'
+import { useCart } from './CartProvider'
+import type { Product } from '../lib/products'
 
-interface Product {
+interface Props {
   id: string
   name: string
   price: number
@@ -26,6 +28,7 @@ export default function BubbleProduct({
   onSelect: () => void
 }) {
   const [isFavorite, setIsFavorite] = useState(false)
+  const { addItem } = useCart()
 
   const bubbleVariants = {
     initial: { scale: 0.8, opacity: 0 },
@@ -66,9 +69,7 @@ export default function BubbleProduct({
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation()
-    // Add to cart logic here
-    const event = new CustomEvent('addToCart', { detail: product })
-    window.dispatchEvent(event)
+    addItem(product, 1)
   }
 
   return (
@@ -81,7 +82,7 @@ export default function BubbleProduct({
         whileHover="hover"
         whileTap="tap"
         onClick={onSelect}
-        className="relative w-72 h-72 rounded-full overflow-hidden cursor-pointer group"
+        className="relative w-80 h-96 rounded-3xl overflow-hidden cursor-pointer group"
         style={{
           background: `linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3))`,
           backdropFilter: 'blur(10px)',
