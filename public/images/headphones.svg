@@ -1,0 +1,9 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="600" rx="40" fill="#0F172A"/>
+  <circle cx="300" cy="330" r="160" fill="#2563EB" opacity="0.25"/>
+  <path d="M180 320C180 260 220 220 280 220H320C380 220 420 260 420 320V420H180V320Z" fill="#60A5FA"/>
+  <path d="M180 320V380H140C130.343 380 122 371.657 122 362V320H180Z" fill="#1D4ED8"/>
+  <path d="M420 320V380H460C469.657 380 478 371.657 478 362V320H420Z" fill="#1D4ED8"/>
+  <path d="M260 180C260 150 280 130 300 130C320 130 340 150 340 180V220H260V180Z" fill="#93C5FD"/>
+  <text x="300" y="540" text-anchor="middle" fill="#E2E8F0" font-size="40" font-family="Inter, sans-serif">Headphones</text>
+</svg>
